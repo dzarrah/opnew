@@ -61,175 +61,150 @@ const InvoiceLayout: React.FC<{
   const customer = customers.find((c) => String(c.id) === String(data.customerId));
   const product = products.find((p) => String(p.id) === String(data.productId));
 
-  // Pagination Logic
-  const ROWS_PER_PAGE = 25;
-  const chunkedRows = [];
-  if (data.rows.length === 0) {
-    chunkedRows.push([]);
-  } else {
-    for (let i = 0; i < data.rows.length; i += ROWS_PER_PAGE) {
-      chunkedRows.push(data.rows.slice(i, i + ROWS_PER_PAGE));
-    }
-  }
-
   return (
-    <div className="font-sans text-gray-900 bg-white w-full max-w-[210mm] mx-auto text-sm print-container">
-      <style>{`
-        @media print {
-          .page-break { page-break-after: always; }
-          .print-container { margin-bottom: 0; }
-        }
-      `}</style>
+    <div className="p-8 font-sans text-gray-900 bg-white w-full max-w-[210mm] mx-auto text-sm print-container">
+      {/* Header */}
+      <div className="flex justify-between items-start mb-2">
+        <div>
+          <h1 className="text-xl font-bold uppercase tracking-wide">TN. OPIN SAPUTRA</h1>
+          <p className="uppercase text-xs font-bold">JL. KOPO NO.58 BANDUNG</p>
+        </div>
+        <div className="text-right mt-2">
+          <p className="text-sm font-bold">Tanggal : {formatDate(data.date)}</p>
+        </div>
+      </div>
 
-      {chunkedRows.map((rows, pageIndex) => {
-        const isLastPage = pageIndex === chunkedRows.length - 1;
-
-        return (
-          <div key={pageIndex} className={`p-8 relative flex flex-col min-h-[297mm] ${!isLastPage ? "page-break" : ""}`}>
-            {/* Header (Repeated on every page) */}
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <h1 className="text-xl font-bold uppercase tracking-wide">TN. OPIN SAPUTRA</h1>
-                <p className="uppercase text-xs font-bold">JL. KOPO NO.58 BANDUNG</p>
-              </div>
-              <div className="text-right mt-2">
-                <p className="text-sm font-bold">Tanggal : {formatDate(data.date)}</p>
-                {chunkedRows.length > 1 && (
-                  <p className="text-[10px] text-gray-500">Halaman {pageIndex + 1} dari {chunkedRows.length}</p>
-                )}
-              </div>
+      {/* Main Box Container */}
+      <div className="border-2 border-black">
+        {/* Row 1: Customer & Order Info */}
+        <div className="flex border-b-2 border-black">
+          {/* Left: Customer */}
+          <div className="w-[60%] border-r-2 border-black p-2">
+            <div className="flex">
+              <span className="w-32 font-bold whitespace-nowrap">Nama Customer :</span>
+              <span className="font-bold flex-1 uppercase">{customer?.name || "-"}</span>
             </div>
-
-            {/* Main Box Container */}
-            <div className="border-2 border-black flex-1 flex flex-col">
-              {/* Row 1: Customer & Order Info */}
-              <div className="flex border-b-2 border-black">
-                {/* Left: Customer */}
-                <div className="w-[60%] border-r-2 border-black p-2">
-                  <div className="flex">
-                    <span className="w-32 font-bold whitespace-nowrap">Nama Customer :</span>
-                    <span className="font-bold flex-1 uppercase">{customer?.name || "-"}</span>
-                  </div>
-                  <div className="flex mt-1">
-                    <span className="w-32 font-bold align-top whitespace-nowrap">Alamat :</span>
-                    <span className="flex-1 uppercase leading-tight">
-                      {customer?.address || "-"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Right: Invoice Info */}
-                <div className="w-[40%] p-2">
-                  <div className="flex mb-1">
-                    <span className="w-32 font-bold whitespace-nowrap">{isReturn ? "No. Retur :" : "No. Surat Jalan :"}</span>
-                    <span className="font-bold">{data.invoiceNumber}</span>
-                  </div>
-                  <div className="flex">
-                    <span className="w-32 font-bold whitespace-nowrap">Harga Satuan :</span>
-                    <span>
-                      {formatCurrency(data.pricePerMeter, data.currency)} / Meter
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Row 2: Product & Totals (Headers repeated for context) */}
-              <div className="flex border-b-2 border-black">
-                {/* Left: Product Name */}
-                <div className="w-[45%] border-r-2 border-black p-2 bg-gray-50 flex flex-col justify-center">
-                  <span className="font-bold mb-1">Code + Jenis :</span>
-                  <span className="uppercase text-md font-semibold">{product?.name || "ITEM DEFAULT"}</span>
-                </div>
-
-                {/* Right: Quantities */}
-                <div className="w-[55%] flex flex-col">
-                  {/* Top: Qty */}
-                  <div className="flex border-b border-black p-2 items-center justify-between">
-                    <span className="font-bold">Banyaknya :</span>
-                    <span className="font-bold">{data.totalRolls} Rol</span>
-                    <span className="font-bold">{data.totalMeters.toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Meter</span>
-                  </div>
-                  {/* Bottom: TOTAL */}
-                  <div className="p-2 flex items-center justify-center gap-4 bg-gray-100 flex-1">
-                    <span className="font-bold text-lg">TOTAL :</span>
-                    <span className="font-bold text-lg">{formatCurrency(data.totalPrice, data.currency)}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Row 3: The 10-Cell Grid */}
-              <div className="flex-1">
-                {/* Header 1-10 */}
-                <div className="flex border-b border-black divide-x divide-black text-center font-bold text-xs bg-gray-200">
-                  {Array.from({ length: 10 }).map((_, i) => (
-                    <div key={i} className="flex-1 py-1">{i + 1}</div>
-                  ))}
-                </div>
-
-                {/* Data Rows for THIS PAGE */}
-                {rows.map((row, idx) => (
-                  <div key={idx} className="flex border-b border-black divide-x divide-black text-center h-8">
-                    {row.lengths.map((len, lenIdx) => (
-                      <div key={lenIdx} className="flex-1 flex items-center justify-center font-mono text-sm">
-                        {len && parseFloat(String(len)) > 0 ? len : ""}
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-
-              {/* Row 4: Notes (Only on Last Page) */}
-              {isLastPage && (
-                <div className="p-2 min-h-[60px] relative border-t-2 border-black mt-auto">
-                  <div className="font-bold mb-1">Catatan : {data.notes}</div>
-                  <div className="absolute right-2 bottom-2 text-[10px] text-right italic text-gray-500">
-                    * Kain yang sudah dipotong tidak dapat<br />dikembalikan / No return on cut fabric
-                  </div>
-                </div>
-              )}
+            <div className="flex mt-1">
+              <span className="w-32 font-bold align-top whitespace-nowrap">Alamat :</span>
+              <span className="flex-1 uppercase leading-tight">
+                {customer?.address || "-"}
+              </span>
             </div>
-
-            {/* Footer Info & Signatures (Only on Last Page) */}
-            {isLastPage && (
-              <>
-                <div className="mt-4 flex flex-wrap items-center gap-x-8 gap-y-2 text-xs font-bold">
-                  <div className="flex items-end gap-2">
-                    <span>Dikirim Via Kendaraan :</span>
-                    <div className="border-b border-black w-24 pb-0.5 text-center px-1">&nbsp;</div>
-                  </div>
-                  <div className="flex items-end gap-2">
-                    <span>No POL :</span>
-                    <div className="border-b border-black w-24 pb-0.5 text-center px-1">{data.plateNumber}</div>
-                  </div>
-                  <div className="flex items-end gap-2">
-                    <span>Nota Angkutan :</span>
-                    <div className="border-b border-black w-24 pb-0.5 text-center px-1">{data.notaAngka}</div>
-                  </div>
-                </div>
-
-                <div className="mt-8 grid grid-cols-4 gap-4 text-center">
-                  <div className="flex flex-col">
-                    <div className="border border-black h-24 mb-2"></div>
-                    <span className="font-bold text-xs uppercase">Cap + Tanda Tangan</span>
-                  </div>
-                  <div className="flex flex-col">
-                    <div className="border border-black h-24 mb-2"></div>
-                    <span className="font-bold text-xs uppercase">Packing</span>
-                  </div>
-                  <div className="flex flex-col">
-                    <div className="border border-black h-24 mb-2"></div>
-                    <span className="font-bold text-xs uppercase">Gudang</span>
-                  </div>
-                  <div className="flex flex-col">
-                    <div className="border border-black h-24 mb-2 flex items-center justify-center"></div>
-                    <span className="font-bold text-xs uppercase">Opin Saputra</span>
-                  </div>
-                </div>
-              </>
-            )}
           </div>
-        );
-      })}
+
+          {/* Right: Invoice Info */}
+          <div className="w-[40%] p-2">
+            <div className="flex mb-1">
+              <span className="w-32 font-bold whitespace-nowrap">{isReturn ? "No. Retur :" : "No. Surat Jalan :"}</span>
+              <span className="font-bold">{data.invoiceNumber}</span>
+            </div>
+            <div className="flex">
+              <span className="w-32 font-bold whitespace-nowrap">Harga Satuan :</span>
+              <span>
+                {formatCurrency(data.pricePerMeter, data.currency)} / Meter
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Row 2: Product & Totals */}
+        <div className="flex border-b-2 border-black">
+          {/* Left: Product Name */}
+          <div className="w-[45%] border-r-2 border-black p-2 bg-gray-50 flex flex-col justify-center">
+            <span className="font-bold mb-1">Code + Jenis :</span>
+            <span className="uppercase text-md font-semibold">{product?.name || "ITEM DEFAULT"}</span>
+          </div>
+
+          {/* Right: Quantities */}
+          <div className="w-[55%] flex flex-col">
+            {/* Top: Qty */}
+            <div className="flex border-b border-black p-2 items-center justify-between">
+              <span className="font-bold">Banyaknya :</span>
+              <span className="font-bold">{data.totalRolls} Rol</span>
+              <span className="font-bold">{data.totalMeters.toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Meter</span>
+            </div>
+            {/* Bottom: TOTAL */}
+            <div className="p-2 flex items-center justify-center gap-4 bg-gray-100 flex-1">
+              <span className="font-bold text-lg">TOTAL :</span>
+              <span className="font-bold text-lg">{formatCurrency(data.totalPrice, data.currency)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Row 3: The 10-Cell Grid */}
+        <div>
+          {/* Header 1-10 */}
+          <div className="flex border-b border-black divide-x divide-black text-center font-bold text-xs bg-gray-200">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div key={i} className="flex-1 py-1">{i + 1}</div>
+            ))}
+          </div>
+
+          {/* Data Rows */}
+          {data.rows.map((row, idx) => (
+            <div key={idx} className="flex border-b border-black divide-x divide-black text-center h-8">
+              {row.lengths.map((len, lenIdx) => (
+                <div key={lenIdx} className="flex-1 flex items-center justify-center font-mono text-sm">
+                  {len && parseFloat(String(len)) > 0 ? len : ""}
+                </div>
+              ))}
+            </div>
+          ))}
+
+          {/* Empty Row Padding if no rows */}
+          {data.rows.length === 0 && (
+            <div className="flex border-b border-black divide-x divide-black text-center h-8">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <div key={i} className="flex-1"></div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Row 4: Notes */}
+        <div className="p-2 min-h-[60px] relative border-t-2 border-black">
+          <div className="font-bold mb-1">Catatan : {data.notes}</div>
+          <div className="absolute right-2 bottom-2 text-[10px] text-right italic text-gray-500">
+            * Kain yang sudah dipotong tidak dapat<br />dikembalikan / No return on cut fabric
+          </div>
+        </div>
+      </div>
+
+      {/* Footer Info */}
+      <div className="mt-4 flex flex-wrap items-center gap-x-8 gap-y-2 text-xs font-bold">
+        <div className="flex items-end gap-2">
+          <span>Dikirim Via Kendaraan :</span>
+          <div className="border-b border-black w-24 pb-0.5 text-center px-1">&nbsp;</div>
+        </div>
+        <div className="flex items-end gap-2">
+          <span>No POL :</span>
+          <div className="border-b border-black w-24 pb-0.5 text-center px-1">{data.plateNumber}</div>
+        </div>
+        <div className="flex items-end gap-2">
+          <span>Nota Angkutan :</span>
+          <div className="border-b border-black w-24 pb-0.5 text-center px-1">{data.notaAngka}</div>
+        </div>
+      </div>
+
+      {/* Signatures */}
+      <div className="mt-8 grid grid-cols-4 gap-4 text-center">
+        <div className="flex flex-col">
+          <div className="border border-black h-24 mb-2"></div>
+          <span className="font-bold text-xs uppercase">Cap + Tanda Tangan</span>
+        </div>
+        <div className="flex flex-col">
+          <div className="border border-black h-24 mb-2"></div>
+          <span className="font-bold text-xs uppercase">Packing</span>
+        </div>
+        <div className="flex flex-col">
+          <div className="border border-black h-24 mb-2"></div>
+          <span className="font-bold text-xs uppercase">Gudang</span>
+        </div>
+        <div className="flex flex-col">
+          <div className="border border-black h-24 mb-2 flex items-center justify-center"></div>
+          <span className="font-bold text-xs uppercase">Opin Saputra</span>
+        </div>
+      </div>
     </div>
   );
 };
