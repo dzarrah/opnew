@@ -1,0 +1,16 @@
+# Node.js
+node_modules
+dist
+build
+
+# Tauri / Rust
+src-tauri/target
+target
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
