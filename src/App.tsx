@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-sloppy-imports no-explicit-any
 import React, { useEffect, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import ReactDOM from "react-dom";
 import Database from "@tauri-apps/plugin-sql";
 
@@ -89,7 +90,7 @@ const App: React.FC = () => {
 
   // Print State
   const [printConfig, setPrintConfig] = useState<{ type: any; data: any; } | null>(null);
-  
+
   // Mobile Sidebar State
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -118,19 +119,19 @@ const App: React.FC = () => {
         setDb(database);
 
         await database.execute(
-          `CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT, age INTEGER)`,
+          `CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT, age INTEGER)`,
         );
         await database.execute(
-          `CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, price REAL, comment TEXT, type TEXT)`,
+          `CREATE TABLE IF NOT EXISTS products(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, price REAL, comment TEXT, type TEXT)`,
         );
         await database.execute(
-          `CREATE TABLE IF NOT EXISTS customers (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, address TEXT, phone TEXT, npwpNumber TEXT, npwpName TEXT, npwpAddress TEXT, npwpPhone TEXT, status TEXT, avatar TEXT)`,
+          `CREATE TABLE IF NOT EXISTS customers(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, address TEXT, phone TEXT, npwpNumber TEXT, npwpName TEXT, npwpAddress TEXT, npwpPhone TEXT, status TEXT, avatar TEXT)`,
         );
         await database.execute(
-          `CREATE TABLE IF NOT EXISTS suppliers (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, address TEXT, phone TEXT)`,
+          `CREATE TABLE IF NOT EXISTS suppliers(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, address TEXT, phone TEXT)`,
         );
         await database.execute(
-          `CREATE TABLE IF NOT EXISTS sales_invoices (id INTEGER PRIMARY KEY AUTOINCREMENT, invoiceNumber TEXT UNIQUE NOT NULL, date TEXT NOT NULL, customerId TEXT NOT NULL, productId TEXT NOT NULL, currency TEXT, exchangeRate REAL, pricePerMeter REAL, totalPrice REAL, notaAngka TEXT, driverName TEXT, plateNumber TEXT, notes TEXT, totalRolls INTEGER, totalMeters REAL)`,
+          `CREATE TABLE IF NOT EXISTS sales_invoices(id INTEGER PRIMARY KEY AUTOINCREMENT, invoiceNumber TEXT UNIQUE NOT NULL, date TEXT NOT NULL, customerId TEXT NOT NULL, productId TEXT NOT NULL, currency TEXT, exchangeRate REAL, pricePerMeter REAL, totalPrice REAL, notaAngka TEXT, driverName TEXT, plateNumber TEXT, notes TEXT, totalRolls INTEGER, totalMeters REAL)`,
         );
         await database.execute(
           "CREATE INDEX IF NOT EXISTS idx_invoices_date ON sales_invoices(date)",
@@ -140,39 +141,39 @@ const App: React.FC = () => {
         );
 
         // New Structure for invoice_rows (c0-c9)
-        await database.execute(`CREATE TABLE IF NOT EXISTS invoice_rows (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          invoice_id INTEGER NOT NULL,
-          row_number INTEGER NOT NULL,
-          c0 REAL, c1 REAL, c2 REAL, c3 REAL, c4 REAL,
-          c5 REAL, c6 REAL, c7 REAL, c8 REAL, c9 REAL,
-          FOREIGN KEY(invoice_id) REFERENCES sales_invoices(id) ON DELETE CASCADE
-        )`);
+        await database.execute(`CREATE TABLE IF NOT EXISTS invoice_rows(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  invoice_id INTEGER NOT NULL,
+  row_number INTEGER NOT NULL,
+  c0 REAL, c1 REAL, c2 REAL, c3 REAL, c4 REAL,
+  c5 REAL, c6 REAL, c7 REAL, c8 REAL, c9 REAL,
+  FOREIGN KEY(invoice_id) REFERENCES sales_invoices(id) ON DELETE CASCADE
+)`);
 
         await database.execute(
-          `CREATE TABLE IF NOT EXISTS return_invoices (id INTEGER PRIMARY KEY AUTOINCREMENT, invoiceNumber TEXT UNIQUE NOT NULL, salesInvoiceRef TEXT NOT NULL, date TEXT NOT NULL, customerId TEXT NOT NULL, productId TEXT NOT NULL, currency TEXT, exchangeRate REAL, pricePerMeter REAL, totalPrice REAL, notaAngka TEXT, driverName TEXT, plateNumber TEXT, notes TEXT, totalRolls INTEGER, totalMeters REAL, originalRolls INTEGER, originalMeters REAL)`,
+          `CREATE TABLE IF NOT EXISTS return_invoices(id INTEGER PRIMARY KEY AUTOINCREMENT, invoiceNumber TEXT UNIQUE NOT NULL, salesInvoiceRef TEXT NOT NULL, date TEXT NOT NULL, customerId TEXT NOT NULL, productId TEXT NOT NULL, currency TEXT, exchangeRate REAL, pricePerMeter REAL, totalPrice REAL, notaAngka TEXT, driverName TEXT, plateNumber TEXT, notes TEXT, totalRolls INTEGER, totalMeters REAL, originalRolls INTEGER, originalMeters REAL)`,
         );
-        await database.execute(`CREATE TABLE IF NOT EXISTS return_invoice_rows (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          return_invoice_id INTEGER NOT NULL,
-          row_number INTEGER NOT NULL,
-          c0 REAL, c1 REAL, c2 REAL, c3 REAL, c4 REAL,
-          c5 REAL, c6 REAL, c7 REAL, c8 REAL, c9 REAL,
-          FOREIGN KEY(return_invoice_id) REFERENCES return_invoices(id) ON DELETE CASCADE
-        )`);
+        await database.execute(`CREATE TABLE IF NOT EXISTS return_invoice_rows(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  return_invoice_id INTEGER NOT NULL,
+  row_number INTEGER NOT NULL,
+  c0 REAL, c1 REAL, c2 REAL, c3 REAL, c4 REAL,
+  c5 REAL, c6 REAL, c7 REAL, c8 REAL, c9 REAL,
+  FOREIGN KEY(return_invoice_id) REFERENCES return_invoices(id) ON DELETE CASCADE
+)`);
 
         await database.execute(
-          `CREATE TABLE IF NOT EXISTS dyeing_orders (id INTEGER PRIMARY KEY AUTOINCREMENT, sjNumber TEXT UNIQUE NOT NULL, date TEXT NOT NULL, supplierId TEXT NOT NULL, productId TEXT NOT NULL, pricePerMeter REAL, color TEXT, setting TEXT, finish TEXT, vehicleType TEXT, vehiclePlate TEXT, notes TEXT, totalRolls INTEGER, totalMeters REAL, totalWeight REAL, totalPrice REAL)`,
+          `CREATE TABLE IF NOT EXISTS dyeing_orders(id INTEGER PRIMARY KEY AUTOINCREMENT, sjNumber TEXT UNIQUE NOT NULL, date TEXT NOT NULL, supplierId TEXT NOT NULL, productId TEXT NOT NULL, pricePerMeter REAL, color TEXT, setting TEXT, finish TEXT, vehicleType TEXT, vehiclePlate TEXT, notes TEXT, totalRolls INTEGER, totalMeters REAL, totalWeight REAL, totalPrice REAL)`,
         );
         await database.execute(
-          `CREATE TABLE IF NOT EXISTS dyeing_order_items (id INTEGER PRIMARY KEY AUTOINCREMENT, order_id INTEGER NOT NULL, row_number INTEGER NOT NULL, pair_index INTEGER NOT NULL, panjang TEXT, berat TEXT, FOREIGN KEY(order_id) REFERENCES dyeing_orders(id) ON DELETE CASCADE)`,
+          `CREATE TABLE IF NOT EXISTS dyeing_order_items(id INTEGER PRIMARY KEY AUTOINCREMENT, order_id INTEGER NOT NULL, row_number INTEGER NOT NULL, pair_index INTEGER NOT NULL, panjang TEXT, berat TEXT, FOREIGN KEY(order_id) REFERENCES dyeing_orders(id) ON DELETE CASCADE)`,
         );
 
         await database.execute(
-          `CREATE TABLE IF NOT EXISTS dyeing_results (id INTEGER PRIMARY KEY AUTOINCREMENT, sjNumber TEXT UNIQUE NOT NULL, date TEXT NOT NULL, supplierId TEXT NOT NULL, productId TEXT NOT NULL, pricePerMeter REAL, color TEXT, setting TEXT, finish TEXT, vehicleType TEXT, vehiclePlate TEXT, notes TEXT, totalRolls INTEGER, totalMeters REAL, totalWeight REAL, totalPrice REAL, orderSjRef TEXT, originalStats TEXT)`,
+          `CREATE TABLE IF NOT EXISTS dyeing_results(id INTEGER PRIMARY KEY AUTOINCREMENT, sjNumber TEXT UNIQUE NOT NULL, date TEXT NOT NULL, supplierId TEXT NOT NULL, productId TEXT NOT NULL, pricePerMeter REAL, color TEXT, setting TEXT, finish TEXT, vehicleType TEXT, vehiclePlate TEXT, notes TEXT, totalRolls INTEGER, totalMeters REAL, totalWeight REAL, totalPrice REAL, orderSjRef TEXT, originalStats TEXT)`,
         );
         await database.execute(
-          `CREATE TABLE IF NOT EXISTS dyeing_result_items (id INTEGER PRIMARY KEY AUTOINCREMENT, result_id INTEGER NOT NULL, row_number INTEGER NOT NULL, pair_index INTEGER NOT NULL, panjang TEXT, berat TEXT, FOREIGN KEY(result_id) REFERENCES dyeing_results(id) ON DELETE CASCADE)`,
+          `CREATE TABLE IF NOT EXISTS dyeing_result_items(id INTEGER PRIMARY KEY AUTOINCREMENT, result_id INTEGER NOT NULL, row_number INTEGER NOT NULL, pair_index INTEGER NOT NULL, panjang TEXT, berat TEXT, FOREIGN KEY(result_id) REFERENCES dyeing_results(id) ON DELETE CASCADE)`,
         );
 
         setDbStatus("Connected");
@@ -183,8 +184,10 @@ const App: React.FC = () => {
         await loadReturnInvoices(database);
         await loadDyeingOrders(database);
         await loadDyeingResults(database);
+        // Signal backend to close splash screen
+        await invoke("close_splashscreen");
       } catch (error) {
-        setDbStatus(`Error: ${error}`);
+        setDbStatus(`Error: ${error} `);
       }
     };
     initDb();
@@ -199,22 +202,21 @@ const App: React.FC = () => {
   ): Promise<string> => {
     if (!db) return "";
     const targetDate = dateContext ? new Date(dateContext) : new Date();
-    const datePrefix = `${prefix}${targetDate.getFullYear()}${
-      String(targetDate.getMonth() + 1).padStart(2, "0")
-    }${String(targetDate.getDate()).padStart(2, "0")}`;
+    const datePrefix = `${prefix}${targetDate.getFullYear()}${String(targetDate.getMonth() + 1).padStart(2, "0")
+      }${String(targetDate.getDate()).padStart(2, "0")} `;
     try {
       const result = await db.select<any[]>(
         `SELECT ${column} FROM ${table} WHERE ${column} LIKE $1 ORDER BY ${column} DESC LIMIT 1`,
-        [`${datePrefix}%`],
+        [`${datePrefix}% `],
       );
       let nextNum = 1;
       if (result.length > 0) {
         const lastSeq = parseInt(result[0][column].slice(-3));
         if (!isNaN(lastSeq)) nextNum = lastSeq + 1;
       }
-      return `${datePrefix}${String(nextNum).padStart(3, "0")}`;
+      return `${datePrefix}${String(nextNum).padStart(3, "0")} `;
     } catch {
-      return `${datePrefix}${Math.floor(Math.random() * 1000)}`;
+      return `${datePrefix}${Math.floor(Math.random() * 1000)} `;
     }
   };
 
@@ -304,7 +306,7 @@ const App: React.FC = () => {
     allRows.forEach((r) => {
       if (!rowsMap.has(r.invoice_id)) rowsMap.set(r.invoice_id, []);
       rowsMap.get(r.invoice_id).push({
-        id: `row-${r.id}`,
+        id: `row - ${r.id} `,
         lengths: [r.c0, r.c1, r.c2, r.c3, r.c4, r.c5, r.c6, r.c7, r.c8, r.c9]
           .map((v) => v === null ? "" : v),
       });
@@ -331,7 +333,7 @@ const App: React.FC = () => {
         rowsMap.set(r.return_invoice_id, []);
       }
       rowsMap.get(r.return_invoice_id).push({
-        id: `row-${r.id}`,
+        id: `row - ${r.id} `,
         lengths: [r.c0, r.c1, r.c2, r.c3, r.c4, r.c5, r.c6, r.c7, r.c8, r.c9]
           .map((v) => v === null ? "" : v),
       });
@@ -368,7 +370,7 @@ const App: React.FC = () => {
         };
       });
       const uiRows = Object.keys(grouped).map((k) => ({
-        id: `row-${k}`,
+        id: `row - ${k} `,
         pairs: grouped[k].filter((x: any) => x !== undefined),
       }));
       return { ...h, id: String(h.id), rows: uiRows };
@@ -398,13 +400,13 @@ const App: React.FC = () => {
         };
       });
       const uiRows = Object.keys(grouped).map((k) => ({
-        id: `row-${k}`,
+        id: `row - ${k} `,
         pairs: grouped[k].filter((x: any) => x !== undefined),
       }));
       let originalStats = { rolls: 0, meters: 0, weight: 0, price: 0 };
       try {
         originalStats = JSON.parse(h.originalStats);
-      } catch {}
+      } catch { }
       return { ...h, id: String(h.id), rows: uiRows, originalStats };
     }));
   };
@@ -417,10 +419,12 @@ const App: React.FC = () => {
         "UPDATE products SET name=$1, price=$2, comment=$3, type=$4 WHERE id=$5",
         [p.name, p.price, p.comment, p.type, p.id],
       );
-    } else {await db.execute(
+    } else {
+      await db.execute(
         "INSERT INTO products (name, price, comment, type) VALUES ($1,$2,$3,$4)",
         [p.name, p.price, p.comment, p.type],
-      );}
+      );
+    }
     await loadProducts(db);
     setEditingProduct(null);
   };
@@ -441,7 +445,8 @@ const App: React.FC = () => {
           c.id,
         ],
       );
-    } else {await db.execute(
+    } else {
+      await db.execute(
         "INSERT INTO customers (name, address, phone, npwpNumber, npwpName, npwpAddress, npwpPhone, status, avatar) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
         [
           c.name,
@@ -454,7 +459,8 @@ const App: React.FC = () => {
           c.status,
           c.avatar,
         ],
-      );}
+      );
+    }
     await loadCustomers(db);
     setEditingCustomer(null);
   };
@@ -466,10 +472,12 @@ const App: React.FC = () => {
         "UPDATE suppliers SET name=$1, address=$2, phone=$3 WHERE id=$4",
         [s.name, s.address, s.phone, s.id],
       );
-    } else {await db.execute(
+    } else {
+      await db.execute(
         "INSERT INTO suppliers (name, address, phone) VALUES ($1,$2,$3)",
         [s.name, s.address, s.phone],
-      );}
+      );
+    }
     await loadSuppliers(db);
     setEditingSupplier(null);
   };
@@ -481,7 +489,7 @@ const App: React.FC = () => {
     if (isUpd) {
       invId = Number(invoice.id);
       await db.execute(
-        `UPDATE sales_invoices SET invoiceNumber=$1, date=$2, customerId=$3, productId=$4, currency=$5, exchangeRate=$6, pricePerMeter=$7, totalPrice=$8, notaAngka=$9, driverName=$10, plateNumber=$11, notes=$12, totalRolls=$13, totalMeters=$14 WHERE id=$15`,
+        `UPDATE sales_invoices SET invoiceNumber = $1, date = $2, customerId = $3, productId = $4, currency = $5, exchangeRate = $6, pricePerMeter = $7, totalPrice = $8, notaAngka = $9, driverName = $10, plateNumber = $11, notes = $12, totalRolls = $13, totalMeters = $14 WHERE id = $15`,
         [
           invoice.invoiceNumber,
           invoice.date,
@@ -503,7 +511,7 @@ const App: React.FC = () => {
       await db.execute("DELETE FROM invoice_rows WHERE invoice_id=$1", [invId]);
     } else {
       const res = await db.execute(
-        `INSERT INTO sales_invoices (invoiceNumber, date, customerId, productId, currency, exchangeRate, pricePerMeter, totalPrice, notaAngka, driverName, plateNumber, notes, totalRolls, totalMeters) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+        `INSERT INTO sales_invoices(invoiceNumber, date, customerId, productId, currency, exchangeRate, pricePerMeter, totalPrice, notaAngka, driverName, plateNumber, notes, totalRolls, totalMeters) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
         [
           invoice.invoiceNumber,
           invoice.date,
@@ -527,7 +535,7 @@ const App: React.FC = () => {
       const row = invoice.rows[i];
       if (row.lengths.some((l) => l !== "" && !isNaN(parseFloat(String(l))))) {
         await db.execute(
-          `INSERT INTO invoice_rows (invoice_id, row_number, c0, c1, c2, c3, c4, c5, c6, c7, c8, c9) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+          `INSERT INTO invoice_rows(invoice_id, row_number, c0, c1, c2, c3, c4, c5, c6, c7, c8, c9) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
           [
             invId,
             i,
@@ -557,7 +565,7 @@ const App: React.FC = () => {
     if (isUpd) {
       invId = Number(invoice.id);
       await db.execute(
-        `UPDATE return_invoices SET invoiceNumber=$1, salesInvoiceRef=$2, date=$3, customerId=$4, productId=$5, currency=$6, exchangeRate=$7, pricePerMeter=$8, totalPrice=$9, notaAngka=$10, driverName=$11, plateNumber=$12, notes=$13, totalRolls=$14, totalMeters=$15, originalRolls=$16, originalMeters=$17 WHERE id=$18`,
+        `UPDATE return_invoices SET invoiceNumber = $1, salesInvoiceRef = $2, date = $3, customerId = $4, productId = $5, currency = $6, exchangeRate = $7, pricePerMeter = $8, totalPrice = $9, notaAngka = $10, driverName = $11, plateNumber = $12, notes = $13, totalRolls = $14, totalMeters = $15, originalRolls = $16, originalMeters = $17 WHERE id = $18`,
         [
           invoice.invoiceNumber,
           invoice.salesInvoiceRef,
@@ -585,7 +593,7 @@ const App: React.FC = () => {
       );
     } else {
       const res = await db.execute(
-        `INSERT INTO return_invoices (invoiceNumber, salesInvoiceRef, date, customerId, productId, currency, exchangeRate, pricePerMeter, totalPrice, notaAngka, driverName, plateNumber, notes, totalRolls, totalMeters, originalRolls, originalMeters) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+        `INSERT INTO return_invoices(invoiceNumber, salesInvoiceRef, date, customerId, productId, currency, exchangeRate, pricePerMeter, totalPrice, notaAngka, driverName, plateNumber, notes, totalRolls, totalMeters, originalRolls, originalMeters) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
         [
           invoice.invoiceNumber,
           invoice.salesInvoiceRef,
@@ -612,7 +620,7 @@ const App: React.FC = () => {
       const row = invoice.rows[i];
       if (row.lengths.some((l) => l !== "" && !isNaN(parseFloat(String(l))))) {
         await db.execute(
-          `INSERT INTO return_invoice_rows (return_invoice_id, row_number, c0, c1, c2, c3, c4, c5, c6, c7, c8, c9) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+          `INSERT INTO return_invoice_rows(return_invoice_id, row_number, c0, c1, c2, c3, c4, c5, c6, c7, c8, c9) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
           [
             invId,
             i,
@@ -641,7 +649,7 @@ const App: React.FC = () => {
     if (isUpd) {
       ordId = Number(order.id);
       await db.execute(
-        `UPDATE dyeing_orders SET sjNumber=$1, date=$2, supplierId=$3, productId=$4, pricePerMeter=$5, color=$6, setting=$7, finish=$8, vehicleType=$9, vehiclePlate=$10, notes=$11, totalRolls=$12, totalMeters=$13, totalWeight=$14, totalPrice=$15 WHERE id=$16`,
+        `UPDATE dyeing_orders SET sjNumber = $1, date = $2, supplierId = $3, productId = $4, pricePerMeter = $5, color = $6, setting = $7, finish = $8, vehicleType = $9, vehiclePlate = $10, notes = $11, totalRolls = $12, totalMeters = $13, totalWeight = $14, totalPrice = $15 WHERE id = $16`,
         [
           order.sjNumber,
           order.date,
@@ -666,7 +674,7 @@ const App: React.FC = () => {
       ]);
     } else {
       const res = await db.execute(
-        `INSERT INTO dyeing_orders (sjNumber, date, supplierId, productId, pricePerMeter, color, setting, finish, vehicleType, vehiclePlate, notes, totalRolls, totalMeters, totalWeight, totalPrice) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+        `INSERT INTO dyeing_orders(sjNumber, date, supplierId, productId, pricePerMeter, color, setting, finish, vehicleType, vehiclePlate, notes, totalRolls, totalMeters, totalWeight, totalPrice) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
         [
           order.sjNumber,
           order.date,
@@ -714,7 +722,7 @@ const App: React.FC = () => {
     if (isUpd) {
       resId = Number(result.id);
       await db.execute(
-        `UPDATE dyeing_results SET sjNumber=$1, date=$2, supplierId=$3, productId=$4, pricePerMeter=$5, color=$6, setting=$7, finish=$8, vehicleType=$9, vehiclePlate=$10, notes=$11, totalRolls=$12, totalMeters=$13, totalWeight=$14, totalPrice=$15, orderSjRef=$16, originalStats=$17 WHERE id=$18`,
+        `UPDATE dyeing_results SET sjNumber = $1, date = $2, supplierId = $3, productId = $4, pricePerMeter = $5, color = $6, setting = $7, finish = $8, vehicleType = $9, vehiclePlate = $10, notes = $11, totalRolls = $12, totalMeters = $13, totalWeight = $14, totalPrice = $15, orderSjRef = $16, originalStats = $17 WHERE id = $18`,
         [
           result.sjNumber,
           result.date,
@@ -741,7 +749,7 @@ const App: React.FC = () => {
       ]);
     } else {
       const res = await db.execute(
-        `INSERT INTO dyeing_results (sjNumber, date, supplierId, productId, pricePerMeter, color, setting, finish, vehicleType, vehiclePlate, notes, totalRolls, totalMeters, totalWeight, totalPrice, orderSjRef, originalStats) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+        `INSERT INTO dyeing_results(sjNumber, date, supplierId, productId, pricePerMeter, color, setting, finish, vehicleType, vehiclePlate, notes, totalRolls, totalMeters, totalWeight, totalPrice, orderSjRef, originalStats) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
         [
           result.sjNumber,
           result.date,
@@ -911,8 +919,8 @@ const App: React.FC = () => {
             }}
           />
         );
-      case "return_invoices": return <ReturnInvoicePage invoices={returnInvoices} customers={customers} products={products} salesInvoices={invoices} onAddInvoiceClick={()=>{setEditingReturnInvoice(null); setIsNewReturnModalOpen(true);}} onPrintClick={(i: ReturnInvoice)=>handlePrint("return",i)} onEditInvoice={(i: ReturnInvoice)=>{setEditingReturnInvoice(i); setIsNewReturnModalOpen(true);}} onDeleteInvoice={handleDeleteReturnInvoice} />;
-      case "dyeing_orders": return <DyeingOrderPage orders={dyeingOrders} suppliers={suppliers} products={products} onAddOrderClick={()=>{setEditingDyeingOrder(null); setIsNewDyeingModalOpen(true);}} onPrintClick={(o: DyeingOrder)=>handlePrint("dyeing_order",o)} onEditOrder={(o: DyeingOrder)=>{setEditingDyeingOrder(o); setIsNewDyeingModalOpen(true);}} onDeleteOrder={handleDeleteDyeingOrder} />;
+      case "return_invoices": return <ReturnInvoicePage invoices={returnInvoices} customers={customers} products={products} salesInvoices={invoices} onAddInvoiceClick={() => { setEditingReturnInvoice(null); setIsNewReturnModalOpen(true); }} onPrintClick={(i: ReturnInvoice) => handlePrint("return", i)} onEditInvoice={(i: ReturnInvoice) => { setEditingReturnInvoice(i); setIsNewReturnModalOpen(true); }} onDeleteInvoice={handleDeleteReturnInvoice} />;
+      case "dyeing_orders": return <DyeingOrderPage orders={dyeingOrders} suppliers={suppliers} products={products} onAddOrderClick={() => { setEditingDyeingOrder(null); setIsNewDyeingModalOpen(true); }} onPrintClick={(o: DyeingOrder) => handlePrint("dyeing_order", o)} onEditOrder={(o: DyeingOrder) => { setEditingDyeingOrder(o); setIsNewDyeingModalOpen(true); }} onDeleteOrder={handleDeleteDyeingOrder} />;
       case "dyeing_results":
         return (
           <DyeingResultPage
@@ -1007,21 +1015,21 @@ const App: React.FC = () => {
     );
   };
 
-    return (
+  return (
 
-      <>
+    <>
 
-        <div className="flex h-screen w-full bg-[#f6f8f8] dark:bg-background-dark overflow-hidden transition-colors duration-300">
+      <div className="flex h-screen w-full bg-[#f6f8f8] dark:bg-background-dark overflow-hidden transition-colors duration-300">
 
-          <Sidebar activeTab={activeTab} onTabChange={(tab) => { setActiveTab(tab); setIsSidebarOpen(false); }} dbStatus={dbStatus} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+        <Sidebar activeTab={activeTab} onTabChange={(tab) => { setActiveTab(tab); setIsSidebarOpen(false); }} dbStatus={dbStatus} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
-          <main className="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
+        <main className="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
 
-            <Header onNewOrderClick={()=>setIsNewInvoiceModalOpen(true)} isDarkMode={isDarkMode} toggleTheme={()=>setIsDarkMode(!isDarkMode)} activeTab={activeTab} onMenuClick={() => setIsSidebarOpen(true)} />
+          <Header onNewOrderClick={() => setIsNewInvoiceModalOpen(true)} isDarkMode={isDarkMode} toggleTheme={() => setIsDarkMode(!isDarkMode)} activeTab={activeTab} onMenuClick={() => setIsSidebarOpen(true)} />
 
-            <div className="flex-1 overflow-y-auto no-scrollbar p-6">{renderContent()}</div>
+          <div className="flex-1 overflow-y-auto no-scrollbar p-6">{renderContent()}</div>
 
-  
+
           <NewOrderForm
             isOpen={isNewOrderModalOpen}
             onClose={() => setIsNewOrderModalOpen(false)}
@@ -1055,10 +1063,10 @@ const App: React.FC = () => {
             initialType={selectedProductType}
             initialData={editingProduct}
           />
-          <NewInvoiceForm isOpen={isNewInvoiceModalOpen} onClose={()=>{setIsNewInvoiceModalOpen(false); setEditingInvoice(null);}} onSubmit={handleSaveInvoice} customers={customers} products={products} invoiceCount={invoices.length} onPrint={handlePrint} onGenerateInvoiceNumber={generateInvoiceNumber} initialData={editingInvoice} />
-          <NewReturnInvoiceForm isOpen={isNewReturnModalOpen} onClose={()=>{setIsNewReturnModalOpen(false); setEditingReturnInvoice(null);}} onSubmit={handleSaveReturnInvoice} customers={customers} products={products} onPrint={handlePrint} salesInvoices={invoices} initialData={editingReturnInvoice} onGenerateInvoiceNumber={generateReturnInvoiceNumber} />
-          <NewDyeingOrderForm isOpen={isNewDyeingModalOpen} onClose={()=>{setIsNewDyeingModalOpen(false); setEditingDyeingOrder(null);}} onSubmit={handleSaveDyeingOrder} suppliers={suppliers} products={products} onPrint={handlePrint} initialData={editingDyeingOrder} onGenerateOrderNumber={generateDyeingOrderNumber} />
-          <NewDyeingResultForm isOpen={isNewResultModalOpen} onClose={()=>{setIsNewResultModalOpen(false); setEditingDyeingResult(null);}} onSubmit={handleSaveDyeingResult} suppliers={suppliers} products={products} dyeingOrders={dyeingOrders} onPrint={handlePrint} initialData={editingDyeingResult} onGenerateResultNumber={generateDyeingResultNumber} />
+          <NewInvoiceForm isOpen={isNewInvoiceModalOpen} onClose={() => { setIsNewInvoiceModalOpen(false); setEditingInvoice(null); }} onSubmit={handleSaveInvoice} customers={customers} products={products} invoiceCount={invoices.length} onPrint={handlePrint} onGenerateInvoiceNumber={generateInvoiceNumber} initialData={editingInvoice} />
+          <NewReturnInvoiceForm isOpen={isNewReturnModalOpen} onClose={() => { setIsNewReturnModalOpen(false); setEditingReturnInvoice(null); }} onSubmit={handleSaveReturnInvoice} customers={customers} products={products} onPrint={handlePrint} salesInvoices={invoices} initialData={editingReturnInvoice} onGenerateInvoiceNumber={generateReturnInvoiceNumber} />
+          <NewDyeingOrderForm isOpen={isNewDyeingModalOpen} onClose={() => { setIsNewDyeingModalOpen(false); setEditingDyeingOrder(null); }} onSubmit={handleSaveDyeingOrder} suppliers={suppliers} products={products} onPrint={handlePrint} initialData={editingDyeingOrder} onGenerateOrderNumber={generateDyeingOrderNumber} />
+          <NewDyeingResultForm isOpen={isNewResultModalOpen} onClose={() => { setIsNewResultModalOpen(false); setEditingDyeingResult(null); }} onSubmit={handleSaveDyeingResult} suppliers={suppliers} products={products} dyeingOrders={dyeingOrders} onPrint={handlePrint} initialData={editingDyeingResult} onGenerateResultNumber={generateDyeingResultNumber} />
         </main>
       </div>
       {renderPrintTemplate()}
