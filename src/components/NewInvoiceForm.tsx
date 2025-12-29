@@ -33,6 +33,7 @@ const NewInvoiceForm: React.FC<NewInvoiceFormProps> = ({
   const today = new Date().toISOString().split("T")[0];
   const [invoiceDate, setInvoiceDate] = useState(today);
   const [invoiceNumber, setInvoiceNumber] = useState("");
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | number>(
     "",
@@ -44,7 +45,8 @@ const NewInvoiceForm: React.FC<NewInvoiceFormProps> = ({
   const formatFullDate = (dateStr: string) => {
     if (!dateStr) return "Pilih Tanggal";
     try {
-      return new Date(dateStr).toLocaleDateString("id-ID", {
+      const [year, month, day] = dateStr.split("-").map(Number);
+      return new Date(year, month - 1, day).toLocaleDateString("id-ID", {
         weekday: "long",
         day: "numeric",
         month: "long",
@@ -313,14 +315,15 @@ const NewInvoiceForm: React.FC<NewInvoiceFormProps> = ({
               </div>
               <div className="flex items-center">
                 <label className="w-20 font-bold shrink-0">Tanggal :</label>
-                <div className="relative flex-1">
+                <div className="relative flex-1" onClick={() => dateInputRef.current?.showPicker()}>
                   <input
+                    ref={dateInputRef}
                     type="date"
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-30"
                     value={invoiceDate}
                     onChange={(e) => setInvoiceDate(e.target.value)}
                   />
-                  <div className="flex-1 bg-white dark:bg-[#141d1f] border border-gray-200 dark:border-[#283639] rounded px-2.5 py-1.5 text-gray-900 dark:text-white font-medium hover:border-primary transition-colors">
+                  <div className="flex-1 bg-white dark:bg-[#141d1f] border border-gray-200 dark:border-[#283639] rounded px-2.5 py-1.5 text-gray-900 dark:text-white font-medium hover:border-primary transition-colors cursor-pointer">
                     {formatFullDate(invoiceDate)}
                   </div>
                 </div>

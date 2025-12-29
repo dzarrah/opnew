@@ -34,6 +34,8 @@ const NewDyeingResultForm: React.FC<NewDyeingResultFormProps> = ({
   const today = new Date().toISOString().split("T")[0];
   const [receiveDate, setReceiveDate] = useState(today);
   const [sjNumber, setSjNumber] = useState("");
+  const dateInputRef = useRef<HTMLInputElement>(null);
+
   const [selectedOrderSjId, setSelectedOrderSjId] = useState<string | number>("");
   const [selectedSupplierId, setSelectedSupplierId] = useState<string | number>("");
   const [selectedProductId, setSelectedProductId] = useState<string | number>("");
@@ -67,7 +69,8 @@ const NewDyeingResultForm: React.FC<NewDyeingResultFormProps> = ({
   const formatFullDate = (dateStr: string) => {
     if (!dateStr) return "Pilih Tanggal";
     try {
-      return new Date(dateStr).toLocaleDateString("id-ID", {
+      const [year, month, day] = dateStr.split("-").map(Number);
+      return new Date(year, month - 1, day).toLocaleDateString("id-ID", {
         weekday: "long",
         day: "numeric",
         month: "long",
@@ -107,7 +110,7 @@ const NewDyeingResultForm: React.FC<NewDyeingResultFormProps> = ({
           ...r,
           pairs: r.pairs.map(p => ({ ...p }))
         }));
-        
+
         // Add extra row if needed
         const lastRow = existingRows[existingRows.length - 1];
         if (lastRow && lastRow.pairs.every(p => p.panjang !== "" && p.berat !== "")) {
@@ -307,14 +310,15 @@ const NewDyeingResultForm: React.FC<NewDyeingResultFormProps> = ({
               </div>
               <div className="flex items-center">
                 <label className="w-24 font-bold">Tanggal :</label>
-                <div className="relative flex-1">
+                <div className="relative flex-1" onClick={() => dateInputRef.current?.showPicker()}>
                   <input
+                    ref={dateInputRef}
                     type="date"
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-30"
                     value={receiveDate}
                     onChange={(e) => setReceiveDate(e.target.value)}
                   />
-                  <div className="flex-1 bg-white dark:bg-[#141d1f] border border-gray-200 dark:border-[#283639] rounded px-3 py-1.5 text-success font-bold hover:border-success transition-colors">
+                  <div className="flex-1 bg-white dark:bg-[#141d1f] border border-gray-200 dark:border-[#283639] rounded px-3 py-1.5 text-success font-bold hover:border-success transition-colors cursor-pointer">
                     {formatFullDate(receiveDate)}
                   </div>
                 </div>

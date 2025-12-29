@@ -202,21 +202,20 @@ const App: React.FC = () => {
   ): Promise<string> => {
     if (!db) return "";
     const targetDate = dateContext ? new Date(dateContext) : new Date();
-    const datePrefix = `${prefix}${targetDate.getFullYear()}${String(targetDate.getMonth() + 1).padStart(2, "0")
-      }${String(targetDate.getDate()).padStart(2, "0")} `;
+    const datePrefix = `${prefix}${targetDate.getFullYear()}${String(targetDate.getMonth() + 1).padStart(2, "0")}${String(targetDate.getDate()).padStart(2, "0")}`;
     try {
       const result = await db.select<any[]>(
         `SELECT ${column} FROM ${table} WHERE ${column} LIKE $1 ORDER BY ${column} DESC LIMIT 1`,
-        [`${datePrefix}% `],
+        [`${datePrefix}%`],
       );
       let nextNum = 1;
       if (result.length > 0) {
         const lastSeq = parseInt(result[0][column].slice(-3));
         if (!isNaN(lastSeq)) nextNum = lastSeq + 1;
       }
-      return `${datePrefix}${String(nextNum).padStart(3, "0")} `;
+      return `${datePrefix}${String(nextNum).padStart(3, "0")}`;
     } catch {
-      return `${datePrefix}${Math.floor(Math.random() * 1000)} `;
+      return `${datePrefix}${Math.floor(Math.random() * 1000)}`;
     }
   };
 

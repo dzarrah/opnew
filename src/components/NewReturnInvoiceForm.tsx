@@ -27,7 +27,8 @@ const NewReturnInvoiceForm: React.FC<NewReturnInvoiceFormProps> = ({
   const today = new Date().toISOString().split("T")[0];
   const [invoiceDate, setInvoiceDate] = useState(today);
   const [invoiceNumber, setInvoiceNumber] = useState("");
-  
+  const dateInputRef = useRef<HTMLInputElement>(null);
+
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | number>("");
   const [selectedProductId, setSelectedProductId] = useState<string | number>("");
   const [selectedSalesInvoiceId, setSelectedSalesInvoiceId] = useState<string | number>("");
@@ -35,7 +36,8 @@ const NewReturnInvoiceForm: React.FC<NewReturnInvoiceFormProps> = ({
   const formatFullDate = (dateStr: string) => {
     if (!dateStr) return "Pilih Tanggal";
     try {
-      return new Date(dateStr).toLocaleDateString("id-ID", {
+      const [year, month, day] = dateStr.split("-").map(Number);
+      return new Date(year, month - 1, day).toLocaleDateString("id-ID", {
         weekday: "long",
         day: "numeric",
         month: "long",
@@ -77,58 +79,58 @@ const NewReturnInvoiceForm: React.FC<NewReturnInvoiceFormProps> = ({
   // Load Initial Data
   useEffect(() => {
     if (isOpen) {
-        if (initialData) {
-            setInvoiceDate(initialData.date);
-            setInvoiceNumber(initialData.invoiceNumber);
-            setSelectedCustomerId(initialData.customerId);
-            setSelectedProductId(initialData.productId);
-            setSelectedSalesInvoiceId(initialData.salesInvoiceRef);
-            setCurrency(initialData.currency);
-            setExchangeRate(initialData.exchangeRate);
-            setPricePerMeter(initialData.pricePerMeter);
-            setNotes(initialData.notes);
-            setOriginalRolls(initialData.originalRolls);
-            setOriginalMeters(initialData.originalMeters);
-            
-            // Find original total price from sales invoices if possible
-            const refInv = salesInvoices.find(inv => String(inv.id) === String(initialData.salesInvoiceRef));
-            if(refInv) setOriginalTotalPrice(refInv.totalPrice);
+      if (initialData) {
+        setInvoiceDate(initialData.date);
+        setInvoiceNumber(initialData.invoiceNumber);
+        setSelectedCustomerId(initialData.customerId);
+        setSelectedProductId(initialData.productId);
+        setSelectedSalesInvoiceId(initialData.salesInvoiceRef);
+        setCurrency(initialData.currency);
+        setExchangeRate(initialData.exchangeRate);
+        setPricePerMeter(initialData.pricePerMeter);
+        setNotes(initialData.notes);
+        setOriginalRolls(initialData.originalRolls);
+        setOriginalMeters(initialData.originalMeters);
 
-            // Clone rows
-            const existingRows = initialData.rows.map((r) => ({
-                ...r,
-                lengths: [...r.lengths],
-            }));
-             // Add extra row if last is full
-            const lastRow = existingRows[existingRows.length-1];
-            if(lastRow && lastRow.lengths.some(l => l !== "")){
-                 existingRows.push({
-                    id: `row-extra-${Date.now()}`,
-                    lengths: Array(FIXED_COLUMNS).fill(""),
-                });
-            } else if (existingRows.length === 0) {
-                 existingRows.push({
-                    id: `row-1`,
-                    lengths: Array(FIXED_COLUMNS).fill(""),
-                });
-            }
-            setGridRows(existingRows);
-        } else {
-             // Reset
-            setInvoiceDate(today);
-            // setInvoiceNumber handled by date effect
-            setSelectedCustomerId("");
-            setSelectedProductId("");
-            setSelectedSalesInvoiceId("");
-            setCurrency("Rp");
-            setExchangeRate(1);
-            setPricePerMeter(0);
-            setNotes("");
-            setOriginalRolls(0);
-            setOriginalMeters(0);
-            setOriginalTotalPrice(0);
-            setGridRows([{ id: "row-1", lengths: Array(FIXED_COLUMNS).fill("") }]);
+        // Find original total price from sales invoices if possible
+        const refInv = salesInvoices.find(inv => String(inv.id) === String(initialData.salesInvoiceRef));
+        if (refInv) setOriginalTotalPrice(refInv.totalPrice);
+
+        // Clone rows
+        const existingRows = initialData.rows.map((r) => ({
+          ...r,
+          lengths: [...r.lengths],
+        }));
+        // Add extra row if last is full
+        const lastRow = existingRows[existingRows.length - 1];
+        if (lastRow && lastRow.lengths.some(l => l !== "")) {
+          existingRows.push({
+            id: `row-extra-${Date.now()}`,
+            lengths: Array(FIXED_COLUMNS).fill(""),
+          });
+        } else if (existingRows.length === 0) {
+          existingRows.push({
+            id: `row-1`,
+            lengths: Array(FIXED_COLUMNS).fill(""),
+          });
         }
+        setGridRows(existingRows);
+      } else {
+        // Reset
+        setInvoiceDate(today);
+        // setInvoiceNumber handled by date effect
+        setSelectedCustomerId("");
+        setSelectedProductId("");
+        setSelectedSalesInvoiceId("");
+        setCurrency("Rp");
+        setExchangeRate(1);
+        setPricePerMeter(0);
+        setNotes("");
+        setOriginalRolls(0);
+        setOriginalMeters(0);
+        setOriginalTotalPrice(0);
+        setGridRows([{ id: "row-1", lengths: Array(FIXED_COLUMNS).fill("") }]);
+      }
     }
   }, [isOpen, initialData, salesInvoices, today]);
 
@@ -307,14 +309,15 @@ const NewReturnInvoiceForm: React.FC<NewReturnInvoiceFormProps> = ({
               </div>
               <div className="flex items-center">
                 <label className="w-24 font-medium">Tanggal :</label>
-                <div className="relative flex-1">
+                <div className="relative flex-1" onClick={() => dateInputRef.current?.showPicker()}>
                   <input
+                    ref={dateInputRef}
                     type="date"
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-30"
                     value={invoiceDate}
                     onChange={(e) => setInvoiceDate(e.target.value)}
                   />
-                  <div className="flex-1 bg-white dark:bg-[#141d1f] border border-gray-200 dark:border-[#283639] rounded px-2.5 py-1.5 text-gray-900 dark:text-white font-medium hover:border-danger transition-colors">
+                  <div className="flex-1 bg-white dark:bg-[#141d1f] border border-gray-200 dark:border-[#283639] rounded px-2.5 py-1.5 text-gray-900 dark:text-white font-medium hover:border-danger transition-colors cursor-pointer">
                     {formatFullDate(invoiceDate)}
                   </div>
                 </div>
