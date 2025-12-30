@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Product, ProductType } from "../types";
 import Pagination from "./Pagination";
+import { useDebounce } from "../hooks/useDebounce";
 
 interface ProductsPageProps {
   products: Product[];
@@ -19,30 +20,38 @@ const ProductsPage: React.FC<ProductsPageProps> = ({
     ProductType.JUAL,
   );
   const [searchQuery, setSearchQuery] = useState("");
-  
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
 
-  const filteredProducts = products.filter(
-    (p) =>
-      p.type === activeSubTab &&
-      (p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        String(p.id).toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (p.comment && p.comment.toLowerCase().includes(searchQuery.toLowerCase()))),
-  );
+  const filteredProducts = useMemo(() => {
+    const query = debouncedSearchQuery.toLowerCase();
+
+    return products.filter(
+      (p) =>
+        p.type === activeSubTab &&
+        (!query ||
+          (p.name || "").toLowerCase().includes(query) ||
+          String(p.id || "").toLowerCase().includes(query) ||
+          (p.comment && (p.comment || "").toLowerCase().includes(query))),
+    );
+  }, [products, activeSubTab, debouncedSearchQuery]);
 
   // Reset to first page when filter/tab changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeSubTab, searchQuery, itemsPerPage]);
+  }, [activeSubTab, debouncedSearchQuery, itemsPerPage]);
 
   // Calculate Pagination
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const paginatedProducts = filteredProducts.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedProducts = useMemo(() => {
+    return filteredProducts.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    );
+  }, [filteredProducts, currentPage, itemsPerPage]);
 
   const handleDelete = (id: number | string) => {
     if (window.confirm("Apakah Anda yakin ingin menghapus barang ini?")) {
@@ -61,7 +70,7 @@ const ProductsPage: React.FC<ProductsPageProps> = ({
             Kelola daftar barang jual dan barang celup.
           </p>
         </div>
-        
+
         <button
           onClick={() => onAddProductClick(activeSubTab)}
           className="flex items-center gap-2 px-5 py-2.5 bg-primary text-[#111718] rounded-lg text-sm font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/10"
@@ -90,11 +99,10 @@ const ProductsPage: React.FC<ProductsPageProps> = ({
             <button
               key={type}
               onClick={() => setActiveSubTab(type)}
-              className={`px-6 py-2 rounded-lg text-xs font-bold transition-all ${
-                activeSubTab === type
-                  ? "bg-white dark:bg-[#1c2527] text-primary shadow-sm"
-                  : "text-gray-500 hover:text-gray-700 dark:text-[#9db4b9] dark:hover:text-white"
-              }`}
+              className={`px-6 py-2 rounded-lg text-xs font-bold transition-all ${activeSubTab === type
+                ? "bg-white dark:bg-[#1c2527] text-primary shadow-sm"
+                : "text-gray-500 hover:text-gray-700 dark:text-[#9db4b9] dark:hover:text-white"
+                }`}
             >
               {type}
             </button>
@@ -182,7 +190,7 @@ const ProductsPage: React.FC<ProductsPageProps> = ({
               </tbody>
             </table>
           </div>
-          
+
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}

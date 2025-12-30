@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 
 interface Option {
   id: string | number;
@@ -41,10 +41,14 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
   }, []);
 
   // Filter options
-  const filteredOptions = options.filter((opt) =>
-    opt.label.toLowerCase().includes(search.toLowerCase()) ||
-    (opt.subLabel && opt.subLabel.toLowerCase().includes(search.toLowerCase()))
-  );
+  const filteredOptions = useMemo(() => {
+    const query = search.toLowerCase();
+    if (!query) return options;
+    return options.filter((opt) =>
+      (opt.label || "").toLowerCase().includes(query) ||
+      (opt.subLabel && (opt.subLabel || "").toLowerCase().includes(query))
+    );
+  }, [options, search]);
 
   return (
     <div className={`relative ${className}`} ref={wrapperRef}>
@@ -86,9 +90,8 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
               filteredOptions.map((opt) => (
                 <div
                   key={opt.id}
-                  className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-[#283639] flex flex-col ${
-                    String(opt.id) === String(value) ? "bg-primary/10 text-primary" : "text-gray-700 dark:text-gray-300"
-                  }`}
+                  className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-[#283639] flex flex-col ${String(opt.id) === String(value) ? "bg-primary/10 text-primary" : "text-gray-700 dark:text-gray-300"
+                    }`}
                   onClick={() => {
                     onChange(opt.id);
                     setIsOpen(false);

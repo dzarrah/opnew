@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ReturnInvoice, Customer, Product, SalesInvoice } from '../types';
 import Pagination from "./Pagination";
+import { useDebounce } from "../hooks/useDebounce";
 
 interface ReturnInvoicePageProps {
   invoices: ReturnInvoice[];
@@ -15,14 +16,43 @@ interface ReturnInvoicePageProps {
 
 const ReturnInvoicePage: React.FC<ReturnInvoicePageProps> = ({ invoices, customers, products, salesInvoices, onAddInvoiceClick, onPrintClick, onEditInvoice, onDeleteInvoice }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
 
-  const getCustomerName = (id: string | number) => customers.find(c => String(c.id) === String(id))?.name || 'Unknown';
-  const getProductName = (id: string | number) => products.find(p => String(p.id) === String(id))?.name || 'Unknown';
-  const getInvoiceNumber = (id: string | number) => salesInvoices.find(inv => String(inv.id) === String(id))?.invoiceNumber || id;
+  // Memoized maps for O(1) lookups
+  const customerMap = useMemo(() => {
+    const map = new Map<string, string>();
+    customers.forEach(c => map.set(String(c.id), c.name));
+    return map;
+  }, [customers]);
+
+  const productMap = useMemo(() => {
+    const map = new Map<string, string>();
+    products.forEach(p => map.set(String(p.id), p.name));
+    return map;
+  }, [products]);
+
+  const salesInvoiceMap = useMemo(() => {
+    const map = new Map<string, string>();
+    salesInvoices.forEach(inv => map.set(String(inv.id), inv.invoiceNumber));
+    return map;
+  }, [salesInvoices]);
+
+  const getCustomerName = (id: string | number | null) => {
+    if (id === null || id === undefined) return 'Unknown';
+    return customerMap.get(String(id)) || 'Unknown';
+  };
+  const getProductName = (id: string | number | null) => {
+    if (id === null || id === undefined) return 'Unknown';
+    return productMap.get(String(id)) || 'Unknown';
+  };
+  const getInvoiceNumber = (id: string | number | null) => {
+    if (id === null || id === undefined) return 'N/A';
+    return salesInvoiceMap.get(String(id)) || String(id);
+  };
 
   const formatLocalDate = (dateStr: string) => {
     try {
@@ -36,25 +66,40 @@ const ReturnInvoicePage: React.FC<ReturnInvoicePageProps> = ({ invoices, custome
     }
   };
 
-  const filteredInvoices = invoices.filter(
-    (inv) =>
-      inv.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      getInvoiceNumber(inv.salesInvoiceRef).toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
-      getCustomerName(inv.customerId).toLowerCase().includes(searchQuery.toLowerCase()) ||
-      getProductName(inv.productId).toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredInvoices = useMemo(() => {
+    const query = debouncedSearchQuery.toLowerCase();
+    if (!query) return invoices;
+
+    return invoices.filter((inv) => {
+      const invoiceNumber = (inv.invoiceNumber || "").toLowerCase();
+      const invoiceNumRef = getInvoiceNumber(inv.salesInvoiceRef).toLowerCase();
+      const customerName = getCustomerName(inv.customerId).toLowerCase();
+      const productName = getProductName(inv.productId).toLowerCase();
+      const notes = (inv.notes || "").toLowerCase();
+
+      return (
+        invoiceNumber.includes(query) ||
+        invoiceNumRef.includes(query) ||
+        customerName.includes(query) ||
+        productName.includes(query) ||
+        notes.includes(query)
+      );
+    });
+  }, [invoices, debouncedSearchQuery, customerMap, productMap, salesInvoiceMap]);
 
   // Reset to first page when search changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, itemsPerPage]);
+  }, [debouncedSearchQuery, itemsPerPage]);
 
   // Calculate Pagination
   const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
-  const paginatedInvoices = filteredInvoices.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedInvoices = useMemo(() => {
+    return filteredInvoices.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    );
+  }, [filteredInvoices, currentPage, itemsPerPage]);
 
   return (
     <div className="max-w-[1400px] mx-auto flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -63,7 +108,7 @@ const ReturnInvoicePage: React.FC<ReturnInvoicePageProps> = ({ invoices, custome
           <h3 className="text-gray-900 dark:text-white text-2xl font-bold tracking-tight">Faktur Retur</h3>
           <p className="text-gray-500 dark:text-[#9db4b9] text-sm">Kelola pengembalian barang dari konsumen.</p>
         </div>
-        <button 
+        <button
           onClick={onAddInvoiceClick}
           className="flex items-center gap-2 px-5 py-2.5 bg-danger/10 text-danger border border-danger/20 rounded-lg text-sm font-bold hover:bg-danger/20 transition-all shadow-lg shadow-danger/5"
         >
@@ -118,21 +163,21 @@ const ReturnInvoicePage: React.FC<ReturnInvoicePageProps> = ({ invoices, custome
                       {inv.totalPrice.toLocaleString('id-ID', { style: 'currency', currency: inv.currency })}
                     </td>
                     <td className="px-6 py-4 text-right">
-                       <div className="flex justify-end gap-2">
-                          <button 
-                            onClick={() => onPrintClick?.(inv)}
-                            className="p-1.5 rounded bg-gray-100 dark:bg-[#283639] text-gray-500 hover:text-danger transition-colors" title="Print Bukti Retur">
-                            <span className="material-symbols-outlined text-sm">print</span>
-                          </button>
-                          <button 
-                            onClick={() => onEditInvoice(inv)}
-                            className="p-1.5 rounded bg-gray-100 dark:bg-[#283639] text-gray-500 hover:text-primary transition-colors" title="Edit">
-                            <span className="material-symbols-outlined text-sm">edit</span>
-                          </button>
-                          <button onClick={() => onDeleteInvoice?.(inv.id)} className="p-1.5 rounded bg-red-50 dark:bg-red-500/10 text-red-400 hover:text-red-600 transition-colors">
-                            <span className="material-symbols-outlined text-sm">delete</span>
-                          </button>
-                        </div>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => onPrintClick?.(inv)}
+                          className="p-1.5 rounded bg-gray-100 dark:bg-[#283639] text-gray-500 hover:text-danger transition-colors" title="Print Bukti Retur">
+                          <span className="material-symbols-outlined text-sm">print</span>
+                        </button>
+                        <button
+                          onClick={() => onEditInvoice(inv)}
+                          className="p-1.5 rounded bg-gray-100 dark:bg-[#283639] text-gray-500 hover:text-primary transition-colors" title="Edit">
+                          <span className="material-symbols-outlined text-sm">edit</span>
+                        </button>
+                        <button onClick={() => onDeleteInvoice?.(inv.id)} className="p-1.5 rounded bg-red-50 dark:bg-red-500/10 text-red-400 hover:text-red-600 transition-colors">
+                          <span className="material-symbols-outlined text-sm">delete</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

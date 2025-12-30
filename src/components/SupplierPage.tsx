@@ -1,7 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Supplier } from '../types';
 import Pagination from "./Pagination";
+import { useDebounce } from "../hooks/useDebounce";
 
 interface SupplierPageProps {
   suppliers: Supplier[];
@@ -17,30 +18,38 @@ const SupplierPage: React.FC<SupplierPageProps> = ({
   onDeleteSupplier,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
 
-  const filteredSuppliers = suppliers.filter(
-    (s) =>
-      s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (s.phone && s.phone.includes(searchQuery)),
-  );
+  const filteredSuppliers = useMemo(() => {
+    const query = debouncedSearchQuery.toLowerCase();
+    if (!query) return suppliers;
+
+    return suppliers.filter(
+      (s) =>
+        (s.name || "").toLowerCase().includes(query) ||
+        (s.id || "").toLowerCase().includes(query) ||
+        (s.address || "").toLowerCase().includes(query) ||
+        (s.phone && s.phone.includes(debouncedSearchQuery)),
+    );
+  }, [suppliers, debouncedSearchQuery]);
 
   // Reset to first page when search changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, itemsPerPage]);
+  }, [debouncedSearchQuery, itemsPerPage]);
 
   // Calculate Pagination
   const totalPages = Math.ceil(filteredSuppliers.length / itemsPerPage);
-  const paginatedSuppliers = filteredSuppliers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedSuppliers = useMemo(() => {
+    return filteredSuppliers.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    );
+  }, [filteredSuppliers, currentPage, itemsPerPage]);
 
   const handleDelete = (id: string) => {
     if (window.confirm("Apakah Anda yakin ingin menghapus supplier ini?")) {
@@ -55,7 +64,7 @@ const SupplierPage: React.FC<SupplierPageProps> = ({
           <h3 className="text-gray-900 dark:text-white text-2xl font-bold tracking-tight">Supplier Directory</h3>
           <p className="text-gray-500 dark:text-[#9db4b9] text-sm">Manage provider and logistic partner.</p>
         </div>
-        <button 
+        <button
           onClick={onAddSupplierClick}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-[#111718] rounded-lg text-sm font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/10"
         >
@@ -109,13 +118,13 @@ const SupplierPage: React.FC<SupplierPageProps> = ({
                     </td>
                     <td className="px-4 py-4 text-right">
                       <div className="flex justify-end gap-2">
-                        <button 
+                        <button
                           onClick={() => onEditSupplier(supplier)}
                           className="p-1.5 rounded bg-gray-100 dark:bg-[#283639] text-gray-500 hover:text-primary transition-colors"
                         >
                           <span className="material-symbols-outlined text-sm">edit</span>
                         </button>
-                        <button 
+                        <button
                           onClick={() => handleDelete(supplier.id)}
                           className="p-1.5 rounded bg-red-50 dark:bg-red-500/10 text-red-400 hover:text-red-600 transition-colors"
                         >
@@ -134,7 +143,7 @@ const SupplierPage: React.FC<SupplierPageProps> = ({
               )}
             </tbody>
           </table>
-          
+
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}

@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Customer } from "../types";
 import Pagination from "./Pagination";
+import { useDebounce } from "../hooks/useDebounce";
 
 interface CustomerPageProps {
   customers: Customer[];
@@ -16,30 +17,38 @@ const CustomerPage: React.FC<CustomerPageProps> = ({
   onDeleteCustomer,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
 
-  const filteredCustomers = customers.filter(
-    (c) =>
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.phone.includes(searchQuery),
-  );
+  const filteredCustomers = useMemo(() => {
+    const query = debouncedSearchQuery.toLowerCase();
+    if (!query) return customers;
+
+    return customers.filter(
+      (c) =>
+        (c.name || "").toLowerCase().includes(query) ||
+        (c.id || "").toLowerCase().includes(query) ||
+        (c.address || "").toLowerCase().includes(query) ||
+        (c.phone || "").includes(debouncedSearchQuery),
+    );
+  }, [customers, debouncedSearchQuery]);
 
   // Reset to first page when search changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, itemsPerPage]);
+  }, [debouncedSearchQuery, itemsPerPage]);
 
   // Calculate Pagination
   const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
-  const paginatedCustomers = filteredCustomers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedCustomers = useMemo(() => {
+    return filteredCustomers.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    );
+  }, [filteredCustomers, currentPage, itemsPerPage]);
 
   const handleDelete = (id: string) => {
     if (window.confirm("Apakah Anda yakin ingin menghapus customer ini?")) {
@@ -159,7 +168,7 @@ const CustomerPage: React.FC<CustomerPageProps> = ({
               )}
             </tbody>
           </table>
-          
+
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}

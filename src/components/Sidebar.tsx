@@ -24,11 +24,10 @@ const NavItem: React.FC<{
     <a
       href={`#${item.id}`}
       onClick={(e) => handleNavClick(e, item.id)}
-      className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all group ${
-        activeTab === item.id
+      className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all group ${activeTab === item.id
           ? "bg-primary/10 border border-primary/20 text-primary dark:text-white"
           : "hover:bg-gray-100 dark:hover:bg-[#283639] text-gray-500 dark:text-[#9db4b9] hover:text-gray-900 dark:hover:text-white"
-      }`}
+        }`}
     >
       <span
         className={`material-symbols-outlined text-[20px] ${activeTab === item.id ? "text-primary" : "text-gray-400 dark:text-[#9db4b9] group-hover:text-gray-900 dark:group-hover:text-white"}`}
@@ -67,14 +66,14 @@ const Sidebar: React.FC<SidebarProps> = ({
     <>
       {/* Mobile Overlay */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden animate-in fade-in duration-200"
           onClick={onClose}
         />
       )}
 
       {/* Sidebar Container */}
-      <aside 
+      <aside
         className={`
           fixed md:static inset-y-0 left-0 z-50
           w-64 bg-white dark:bg-background-dark border-r border-gray-200 dark:border-[#283639] 
@@ -151,17 +150,6 @@ const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
 
-          <div className="mt-auto pt-4 border-t border-gray-100 dark:border-[#283639]">
-            <a
-              href="#settings"
-              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#283639] transition-all group text-gray-500 dark:text-[#9db4b9] hover:text-gray-900 dark:hover:text-white"
-            >
-              <span className="material-symbols-outlined text-[20px] text-gray-400 dark:text-[#9db4b9] group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
-                settings
-              </span>
-              <p className="text-sm font-medium">Settings</p>
-            </a>
-          </div>
         </nav>
 
         <div className="p-4 border-t border-gray-100 dark:border-[#283639]">
